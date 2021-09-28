@@ -1,0 +1,11 @@
+{
+	"name": "LiveWithDowPBIWS",
+	"properties": {
+		"annotations": [],
+		"type": "PowerBIWorkspace",
+		"typeProperties": {
+			"workspaceID": "5abf6379-7ac5-4cd6-9ca0-50ee12f998b9",
+			"tenantID": "72f988bf-86f1-41af-91ab-2d7cd011db47"
+		}
+	}
+}
