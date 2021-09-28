@@ -24,13 +24,15 @@
 							"value": {
 								"value": "@pipeline().parameters.a",
 								"type": "Expression"
-							}
+							},
+							"type": "int"
 						},
 						"b": {
 							"value": {
 								"value": "@pipeline().parameters.b",
 								"type": "Expression"
-							}
+							},
+							"type": "int"
 						}
 					},
 					"snapshot": true
