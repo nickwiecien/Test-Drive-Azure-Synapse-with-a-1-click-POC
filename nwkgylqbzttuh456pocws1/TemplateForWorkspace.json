@@ -41,6 +41,43 @@
 	},
 	"resources": [
 		{
+			"name": "[concat(parameters('workspaceName'), '/Pipeline 1')]",
+			"type": "Microsoft.Synapse/workspaces/pipelines",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"activities": [
+					{
+						"name": "Parameters",
+						"type": "SynapseNotebook",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebook": {
+								"referenceName": "Parameters",
+								"type": "NotebookReference"
+							},
+							"snapshot": true
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/notebooks/Parameters')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('workspaceName'), '/TripFaresDataPipeline')]",
 			"type": "Microsoft.Synapse/workspaces/pipelines",
 			"apiVersion": "2019-06-01-preview",
@@ -1117,6 +1154,20 @@
 			]
 		},
 		{
+			"name": "[concat(parameters('workspaceName'), '/LiveWithDowPBIWS')]",
+			"type": "Microsoft.Synapse/workspaces/linkedServices",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"annotations": [],
+				"type": "PowerBIWorkspace",
+				"typeProperties": {
+					"workspaceID": "5abf6379-7ac5-4cd6-9ca0-50ee12f998b9",
+					"tenantID": "72f988bf-86f1-41af-91ab-2d7cd011db47"
+				}
+			},
+			"dependsOn": []
+		},
+		{
 			"name": "[concat(parameters('workspaceName'), '/PowerBIWorkspaceTripsFares')]",
 			"type": "Microsoft.Synapse/workspaces/linkedServices",
 			"apiVersion": "2019-06-01-preview",
@@ -1389,8 +1440,7 @@
 						"nodeCount": 5,
 						"cores": 8,
 						"memory": 56
-					},
-					"sessionKeepAliveTimeout": 30
+					}
 				},
 				"cells": [
 					{
@@ -1409,7 +1459,6 @@
 					},
 					{
 						"cell_type": "code",
-						"metadata": {},
 						"source": [
 							"from azureml.opendatasets import NycTlcYellow\r\n",
 							"from datetime import datetime\r\n",
@@ -1954,13 +2003,11 @@
 						"nodeCount": 5,
 						"cores": 8,
 						"memory": 56
-					},
-					"sessionKeepAliveTimeout": 30
+					}
 				},
 				"cells": [
 					{
 						"cell_type": "code",
-						"metadata": {},
 						"source": [
 							"from samplelib import *\r\n",
 							"from samplelib.test import *\r\n",
@@ -2041,8 +2088,7 @@
 						"nodeCount": 5,
 						"cores": 8,
 						"memory": 56
-					},
-					"sessionKeepAliveTimeout": 30
+					}
 				},
 				"cells": [
 					{
@@ -2253,663 +2299,6 @@
 			"dependsOn": []
 		},
 		{
-			"name": "[concat(parameters('workspaceName'), '/Read and write data from Azure Data Lake Storage Gen2')]",
-			"type": "Microsoft.Synapse/workspaces/notebooks",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"nbformat": 4,
-				"nbformat_minor": 2,
-				"bigDataPool": {
-					"referenceName": "ws1sparkpool1",
-					"type": "BigDataPoolReference"
-				},
-				"sessionProperties": {
-					"driverMemory": "56g",
-					"driverCores": 8,
-					"executorMemory": "56g",
-					"executorCores": 8,
-					"numExecutors": 2,
-					"conf": {
-						"spark.dynamicAllocation.enabled": "false",
-						"spark.dynamicAllocation.minExecutors": "2",
-						"spark.dynamicAllocation.maxExecutors": "2"
-					}
-				},
-				"metadata": {
-					"saveOutput": true,
-					"enableDebugMode": false,
-					"kernelspec": {
-						"name": "synapse_pyspark",
-						"display_name": "Synapse PySpark"
-					},
-					"language_info": {
-						"name": "python"
-					},
-					"a365ComputeOptions": {
-						"id": "/subscriptions/f3e38aaa-dd9c-4f17-95c1-ef3ff472da61/resourceGroups/dow_synapse_oneclick_v3_rg/providers/Microsoft.Synapse/workspaces/nwkgylqbzttuh456pocws1/bigDataPools/ws1sparkpool1",
-						"name": "ws1sparkpool1",
-						"type": "Spark",
-						"endpoint": "https://nwkgylqbzttuh456pocws1.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/ws1sparkpool1",
-						"auth": {
-							"type": "AAD",
-							"authResource": "https://dev.azuresynapse.net"
-						},
-						"sparkVersion": "2.4",
-						"nodeCount": 5,
-						"cores": 8,
-						"memory": 56
-					},
-					"sessionKeepAliveTimeout": 30
-				},
-				"cells": [
-					{
-						"cell_type": "markdown",
-						"metadata": {},
-						"source": [
-							"# Access data on Azure Data Lake Storage Gen2 (ADLS Gen2) with Synapse Spark\n",
-							"\n",
-							"Azure Data Lake Storage Gen2 (ADLS Gen2) is used as the storage account associated with a Synapse workspace. A synapse workspace can have a default ADLS Gen2 storage account and additional linked storage accounts. \n",
-							"\n",
-							"You can access data on ADLS Gen2 with Synapse Spark via following URL:\n",
-							"    \n",
-							"    abfss://<container_name>@<storage_account_name>.dfs.core.windows.net/<path>\n",
-							"\n",
-							"This notebook provides examples of how to read data from ADLS Gen2 account into a Spark context and how to write the output of Spark jobs directly into an ADLS Gen2 location.\n",
-							"\n",
-							"## Pre-requisites\n",
-							"Synapse leverage AAD pass-through to access any ADLS Gen2 account (or folder) to which you have a **Blob Storage Contributor** permission. No credentials or access token is required. "
-						]
-					},
-					{
-						"cell_type": "markdown",
-						"metadata": {},
-						"source": [
-							"## Load a sample data\n",
-							"\n",
-							"Let's first load the [public holidays](https://azure.microsoft.com/en-us/services/open-datasets/catalog/public-holidays/) of last 6 months from Azure Open datasets as a sample."
-						]
-					},
-					{
-						"cell_type": "code",
-						"metadata": {},
-						"source": [
-							"from azureml.opendatasets import PublicHolidays\n",
-							"\n",
-							"from datetime import datetime\n",
-							"from dateutil import parser\n",
-							"from dateutil.relativedelta import relativedelta\n",
-							"\n",
-							"\n",
-							"end_date = datetime.today()\n",
-							"start_date = datetime.today() - relativedelta(months=6)\n",
-							"hol = PublicHolidays(start_date=start_date, end_date=end_date)\n",
-							"hol_df = hol.to_spark_dataframe()"
-						],
-						"outputs": [],
-						"execution_count": 21
-					},
-					{
-						"cell_type": "code",
-						"metadata": {},
-						"source": [
-							"# Display 5 rows\n",
-							"hol_df.show(5, truncate = False)"
-						],
-						"outputs": [],
-						"execution_count": 22
-					},
-					{
-						"cell_type": "markdown",
-						"metadata": {},
-						"source": [
-							"## Write data to the default ADLS Gen2 storage\n",
-							"\n",
-							"We are going to write the spark dateframe to your default ADLS Gen2 storage account.\n",
-							""
-						]
-					},
-					{
-						"cell_type": "code",
-						"metadata": {},
-						"source": [
-							"from pyspark.sql import SparkSession\n",
-							"from pyspark.sql.types import *\n",
-							"\n",
-							"# Primary storage info\n",
-							"account_name = 'nwkgylqbzttuh456poc' # fill in your primary account name\n",
-							"container_name = 'public' # fill in your container name\n",
-							"relative_path = 'holiday_data/' # fill in your relative folder path\n",
-							"\n",
-							"adls_path = 'abfss://%s@%s.dfs.core.windows.net/%s' % (container_name, account_name, relative_path)\n",
-							"print('Primary storage account path: ' + adls_path)"
-						],
-						"outputs": [],
-						"execution_count": 23
-					},
-					{
-						"cell_type": "markdown",
-						"metadata": {},
-						"source": [
-							"### Save a dataframe as Parquet, JSON or CSV\n",
-							"If you have a dataframe, you can save it to Parquet or JSON with the .write.parquet(), .write.json() and .write.csv() methods respectively.\n",
-							"\n",
-							"Dataframes can be saved in any format, regardless of the input format.\n",
-							""
-						]
-					},
-					{
-						"cell_type": "code",
-						"metadata": {},
-						"source": [
-							"parquet_path = adls_path + 'holiday.parquet'\n",
-							"json_path = adls_path + 'holiday.json'\n",
-							"csv_path = adls_path + 'holiday.csv'\n",
-							"print('parquet file path: ' + parquet_path)\n",
-							"print('json file path： ' + json_path)\n",
-							"print('csv file path: ' + csv_path)"
-						],
-						"outputs": [],
-						"execution_count": 24
-					},
-					{
-						"cell_type": "code",
-						"metadata": {},
-						"source": [
-							"hol_df.write.parquet(parquet_path, mode = 'overwrite')\n",
-							"hol_df.write.json(json_path, mode = 'overwrite')\n",
-							"hol_df.write.csv(csv_path, mode = 'overwrite', header = 'true')"
-						],
-						"outputs": [],
-						"execution_count": 25
-					},
-					{
-						"cell_type": "markdown",
-						"metadata": {},
-						"source": [
-							"### Save a dataframe as text files\n",
-							"If you have a dataframe that you want ot save as text file, you must first covert it to an RDD and then save that RDD as a text file.\n",
-							""
-						]
-					},
-					{
-						"cell_type": "code",
-						"metadata": {},
-						"source": [
-							"# Define the text file path\n",
-							"text_path = adls_path + 'holiday.txt'\n",
-							"print('text file path: ' + text_path)"
-						],
-						"outputs": [],
-						"execution_count": 18
-					},
-					{
-						"cell_type": "code",
-						"metadata": {},
-						"source": [
-							"# Covert spark dataframe into RDD \n",
-							"hol_RDD = hol_df.rdd\n",
-							"type(hol_RDD)"
-						],
-						"outputs": [],
-						"execution_count": 19
-					},
-					{
-						"cell_type": "markdown",
-						"metadata": {},
-						"source": [
-							"If you have an RDD, you can convert it to a text file like the following:\n",
-							""
-						]
-					},
-					{
-						"cell_type": "code",
-						"metadata": {},
-						"source": [
-							" # Save RDD as text file\n",
-							"hol_RDD.saveAsTextFile(text_path)"
-						],
-						"outputs": [],
-						"execution_count": 20
-					},
-					{
-						"cell_type": "markdown",
-						"metadata": {},
-						"source": [
-							"# Read data from the default ADLS Gen2 storage\n",
-							""
-						]
-					},
-					{
-						"cell_type": "markdown",
-						"metadata": {},
-						"source": [
-							"### Create a dataframe from parquet files\n",
-							""
-						]
-					},
-					{
-						"cell_type": "code",
-						"metadata": {
-							"collapsed": false
-						},
-						"source": [
-							"df_parquet = spark.read.parquet(parquet_path)\r\n",
-							"display(df_parquet)"
-						],
-						"outputs": [],
-						"execution_count": 27
-					},
-					{
-						"cell_type": "markdown",
-						"metadata": {},
-						"source": [
-							"### Create a dataframe from JSON files\n",
-							""
-						]
-					},
-					{
-						"cell_type": "code",
-						"metadata": {},
-						"source": [
-							"df_json = spark.read.json(json_path)"
-						],
-						"outputs": [],
-						"execution_count": null
-					},
-					{
-						"cell_type": "markdown",
-						"metadata": {},
-						"source": [
-							"### Create a dataframe from CSV files\n",
-							""
-						]
-					},
-					{
-						"cell_type": "code",
-						"metadata": {},
-						"source": [
-							"df_csv = spark.read.csv(csv_path, header = 'true')"
-						],
-						"outputs": [],
-						"execution_count": null
-					},
-					{
-						"cell_type": "markdown",
-						"metadata": {},
-						"source": [
-							"### Create an RDD from text file\n",
-							""
-						]
-					},
-					{
-						"cell_type": "code",
-						"metadata": {},
-						"source": [
-							"text = sc.textFile(text_path)"
-						],
-						"outputs": [],
-						"execution_count": null
-					},
-					{
-						"cell_type": "code",
-						"metadata": {
-							"jupyter": {
-								"source_hidden": false,
-								"outputs_hidden": false
-							},
-							"nteract": {
-								"transient": {
-									"deleting": false
-								}
-							}
-						},
-						"source": [
-							"import matplotlib.pyplot as plt\r\n",
-							"import numpy as np\r\n",
-							"\r\n",
-							"fig = plt.figure()\r\n",
-							"ax = fig.add_subplot(111, projection = '3d')\r\n",
-							"\r\n",
-							"x = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]\r\n",
-							"y = np.random.randint(10, size=10)\r\n",
-							"z = np.zeros(10)\r\n",
-							"\r\n",
-							"dx = np.ones(10)\r\n",
-							"dy = np.ones(10)\r\n",
-							"dz = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]\r\n",
-							"\r\n",
-							"ax.bar3d(x, y, z, dx, dy, dz, color='g')\r\n",
-							"\r\n",
-							"ax.set_xlabel('x axis')\r\n",
-							"ax.set_ylabel('y axis')\r\n",
-							"ax.set_zlabel('z axis')\r\n",
-							"plt.title(\"3D Bar Chart Example\")\r\n",
-							"plt.tight_layout()\r\n",
-							"plt.show()"
-						],
-						"outputs": [],
-						"execution_count": 28
-					}
-				]
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/nwkgylqbzttuh456pocws1p1')]",
-			"type": "Microsoft.Synapse/workspaces/sqlPools",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"collation": "SQL_Latin1_General_CP1_CI_AS",
-				"maxSizeBytes": 263882790666240,
-				"restorePointInTime": "0001-01-01T00:00:00",
-				"annotations": []
-			},
-			"dependsOn": [],
-			"location": "eastus2"
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/default')]",
-			"type": "Microsoft.Synapse/workspaces/managedVirtualNetworks",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/LiveWithDowPBIWS')]",
-			"type": "Microsoft.Synapse/workspaces/linkedServices",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"annotations": [],
-				"type": "PowerBIWorkspace",
-				"typeProperties": {
-					"workspaceID": "5abf6379-7ac5-4cd6-9ca0-50ee12f998b9",
-					"tenantID": "72f988bf-86f1-41af-91ab-2d7cd011db47"
-				}
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/Read and write data from Azure Data Lake Storage Gen2_er7')]",
-			"type": "Microsoft.Synapse/workspaces/notebooks",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"nbformat": 4,
-				"nbformat_minor": 2,
-				"sessionProperties": {
-					"driverMemory": "28g",
-					"driverCores": 4,
-					"executorMemory": "28g",
-					"executorCores": 4,
-					"numExecutors": 2,
-					"conf": {
-						"spark.dynamicAllocation.enabled": "false",
-						"spark.dynamicAllocation.minExecutors": "2",
-						"spark.dynamicAllocation.maxExecutors": "2"
-					}
-				},
-				"metadata": {
-					"saveOutput": true,
-					"enableDebugMode": false,
-					"kernelspec": {
-						"name": "synapse_pyspark",
-						"display_name": "python"
-					},
-					"language_info": {
-						"name": "python"
-					},
-					"sessionKeepAliveTimeout": 30
-				},
-				"cells": [
-					{
-						"cell_type": "markdown",
-						"metadata": {},
-						"source": [
-							"# Access data on Azure Data Lake Storage Gen2 (ADLS Gen2) with Synapse Spark\n",
-							"\n",
-							"Azure Data Lake Storage Gen2 (ADLS Gen2) is used as the storage account associated with a Synapse workspace. A synapse workspace can have a default ADLS Gen2 storage account and additional linked storage accounts. \n",
-							"\n",
-							"You can access data on ADLS Gen2 with Synapse Spark via following URL:\n",
-							"    \n",
-							"    abfss://<container_name>@<storage_account_name>.dfs.core.windows.net/<path>\n",
-							"\n",
-							"This notebook provides examples of how to read data from ADLS Gen2 account into a Spark context and how to write the output of Spark jobs directly into an ADLS Gen2 location.\n",
-							"\n",
-							"## Pre-requisites\n",
-							"Synapse leverage AAD pass-through to access any ADLS Gen2 account (or folder) to which you have a **Blob Storage Contributor** permission. No credentials or access token is required. "
-						]
-					},
-					{
-						"cell_type": "markdown",
-						"metadata": {},
-						"source": [
-							"## Load a sample data\n",
-							"\n",
-							"Let's first load the [public holidays](https://azure.microsoft.com/en-us/services/open-datasets/catalog/public-holidays/) of last 6 months from Azure Open datasets as a sample."
-						]
-					},
-					{
-						"cell_type": "code",
-						"metadata": {},
-						"source": [
-							"from azureml.opendatasets import PublicHolidays\n",
-							"\n",
-							"from datetime import datetime\n",
-							"from dateutil import parser\n",
-							"from dateutil.relativedelta import relativedelta\n",
-							"\n",
-							"\n",
-							"end_date = datetime.today()\n",
-							"start_date = datetime.today() - relativedelta(months=6)\n",
-							"hol = PublicHolidays(start_date=start_date, end_date=end_date)\n",
-							"hol_df = hol.to_spark_dataframe()"
-						],
-						"outputs": [],
-						"execution_count": 1
-					},
-					{
-						"cell_type": "code",
-						"metadata": {},
-						"source": [
-							"# Display 5 rows\n",
-							"hol_df.show(5, truncate = False)"
-						],
-						"outputs": [],
-						"execution_count": 2
-					},
-					{
-						"cell_type": "markdown",
-						"metadata": {},
-						"source": [
-							"## Write data to the default ADLS Gen2 storage\n",
-							"\n",
-							"We are going to write the spark dateframe to your default ADLS Gen2 storage account.\n",
-							""
-						]
-					},
-					{
-						"cell_type": "code",
-						"metadata": {},
-						"source": [
-							"from pyspark.sql import SparkSession\n",
-							"from pyspark.sql.types import *\n",
-							"\n",
-							"# Primary storage info\n",
-							"account_name = 'fill in your primary account name' # fill in your primary account name\n",
-							"container_name = 'fill in your container name' # fill in your container name\n",
-							"relative_path = 'fill in your relative folder path' # fill in your relative folder path\n",
-							"\n",
-							"adls_path = 'abfss://%s@%s.dfs.core.windows.net/%s' % (container_name, account_name, relative_path)\n",
-							"print('Primary storage account path: ' + adls_path)"
-						],
-						"outputs": [],
-						"execution_count": null
-					},
-					{
-						"cell_type": "markdown",
-						"metadata": {},
-						"source": [
-							"### Save a dataframe as Parquet, JSON or CSV\n",
-							"If you have a dataframe, you can save it to Parquet or JSON with the .write.parquet(), .write.json() and .write.csv() methods respectively.\n",
-							"\n",
-							"Dataframes can be saved in any format, regardless of the input format.\n",
-							""
-						]
-					},
-					{
-						"cell_type": "code",
-						"metadata": {},
-						"source": [
-							"parquet_path = adls_path + 'holiday.parquet'\n",
-							"json_path = adls_path + 'holiday.json'\n",
-							"csv_path = adls_path + 'holiday.csv'\n",
-							"print('parquet file path: ' + parquet_path)\n",
-							"print('json file path： ' + json_path)\n",
-							"print('csv file path: ' + csv_path)"
-						],
-						"outputs": [],
-						"execution_count": 4
-					},
-					{
-						"cell_type": "code",
-						"metadata": {},
-						"source": [
-							"hol_df.write.parquet(parquet_path, mode = 'overwrite')\n",
-							"hol_df.write.json(json_path, mode = 'overwrite')\n",
-							"hol_df.write.csv(csv_path, mode = 'overwrite', header = 'true')"
-						],
-						"outputs": [],
-						"execution_count": 5
-					},
-					{
-						"cell_type": "markdown",
-						"metadata": {},
-						"source": [
-							"### Save a dataframe as text files\n",
-							"If you have a dataframe that you want ot save as text file, you must first covert it to an RDD and then save that RDD as a text file.\n",
-							""
-						]
-					},
-					{
-						"cell_type": "code",
-						"metadata": {},
-						"source": [
-							"# Define the text file path\n",
-							"text_path = adls_path + 'holiday.txt'\n",
-							"print('text file path: ' + text_path)"
-						],
-						"outputs": [],
-						"execution_count": 11
-					},
-					{
-						"cell_type": "code",
-						"metadata": {},
-						"source": [
-							"# Covert spark dataframe into RDD \n",
-							"hol_RDD = hol_df.rdd\n",
-							"type(hol_RDD)"
-						],
-						"outputs": [],
-						"execution_count": 12
-					},
-					{
-						"cell_type": "markdown",
-						"metadata": {},
-						"source": [
-							"If you have an RDD, you can convert it to a text file like the following:\n",
-							""
-						]
-					},
-					{
-						"cell_type": "code",
-						"metadata": {},
-						"source": [
-							" # Save RDD as text file\n",
-							"hol_RDD.saveAsTextFile(text_path)"
-						],
-						"outputs": [],
-						"execution_count": 13
-					},
-					{
-						"cell_type": "markdown",
-						"metadata": {},
-						"source": [
-							"# Read data from the default ADLS Gen2 storage\n",
-							""
-						]
-					},
-					{
-						"cell_type": "markdown",
-						"metadata": {},
-						"source": [
-							"### Create a dataframe from parquet files\n",
-							""
-						]
-					},
-					{
-						"cell_type": "code",
-						"metadata": {},
-						"source": [
-							"df_parquet = spark.read.parquet(parquet_path)"
-						],
-						"outputs": [],
-						"execution_count": 14
-					},
-					{
-						"cell_type": "markdown",
-						"metadata": {},
-						"source": [
-							"### Create a dataframe from JSON files\n",
-							""
-						]
-					},
-					{
-						"cell_type": "code",
-						"metadata": {},
-						"source": [
-							"df_json = spark.read.json(json_path)"
-						],
-						"outputs": [],
-						"execution_count": 15
-					},
-					{
-						"cell_type": "markdown",
-						"metadata": {},
-						"source": [
-							"### Create a dataframe from CSV files\n",
-							""
-						]
-					},
-					{
-						"cell_type": "code",
-						"metadata": {},
-						"source": [
-							"df_csv = spark.read.csv(csv_path, header = 'true')"
-						],
-						"outputs": [],
-						"execution_count": 16
-					},
-					{
-						"cell_type": "markdown",
-						"metadata": {},
-						"source": [
-							"### Create an RDD from text file\n",
-							""
-						]
-					},
-					{
-						"cell_type": "code",
-						"metadata": {},
-						"source": [
-							"text = sc.textFile(text_path)"
-						],
-						"outputs": [],
-						"execution_count": 17
-					}
-				]
-			},
-			"dependsOn": []
-		},
-		{
 			"name": "[concat(parameters('workspaceName'), '/Parameters')]",
 			"type": "Microsoft.Synapse/workspaces/notebooks",
 			"apiVersion": "2019-06-01-preview",
@@ -2991,14 +2380,610 @@
 							"print(b)"
 						],
 						"outputs": [],
-						"execution_count": null
+						"execution_count": 2
 					}
 				]
 			},
 			"dependsOn": []
 		},
 		{
-			"name": "[concat(parameters('workspaceName'), '/Pipeline 1')]",
+			"name": "[concat(parameters('workspaceName'), '/Read and write data from Azure Data Lake Storage Gen2')]",
+			"type": "Microsoft.Synapse/workspaces/notebooks",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"nbformat": 4,
+				"nbformat_minor": 2,
+				"bigDataPool": {
+					"referenceName": "ws1sparkpool1",
+					"type": "BigDataPoolReference"
+				},
+				"sessionProperties": {
+					"driverMemory": "56g",
+					"driverCores": 8,
+					"executorMemory": "56g",
+					"executorCores": 8,
+					"numExecutors": 2,
+					"conf": {
+						"spark.dynamicAllocation.enabled": "false",
+						"spark.dynamicAllocation.minExecutors": "2",
+						"spark.dynamicAllocation.maxExecutors": "2"
+					}
+				},
+				"metadata": {
+					"saveOutput": true,
+					"enableDebugMode": false,
+					"kernelspec": {
+						"name": "synapse_pyspark",
+						"display_name": "Synapse PySpark"
+					},
+					"language_info": {
+						"name": "python"
+					},
+					"a365ComputeOptions": {
+						"id": "/subscriptions/f3e38aaa-dd9c-4f17-95c1-ef3ff472da61/resourceGroups/dow_synapse_oneclick_v3_rg/providers/Microsoft.Synapse/workspaces/nwkgylqbzttuh456pocws1/bigDataPools/ws1sparkpool1",
+						"name": "ws1sparkpool1",
+						"type": "Spark",
+						"endpoint": "https://nwkgylqbzttuh456pocws1.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/ws1sparkpool1",
+						"auth": {
+							"type": "AAD",
+							"authResource": "https://dev.azuresynapse.net"
+						},
+						"sparkVersion": "2.4",
+						"nodeCount": 5,
+						"cores": 8,
+						"memory": 56
+					}
+				},
+				"cells": [
+					{
+						"cell_type": "markdown",
+						"source": [
+							"# Access data on Azure Data Lake Storage Gen2 (ADLS Gen2) with Synapse Spark\n",
+							"\n",
+							"Azure Data Lake Storage Gen2 (ADLS Gen2) is used as the storage account associated with a Synapse workspace. A synapse workspace can have a default ADLS Gen2 storage account and additional linked storage accounts. \n",
+							"\n",
+							"You can access data on ADLS Gen2 with Synapse Spark via following URL:\n",
+							"    \n",
+							"    abfss://<container_name>@<storage_account_name>.dfs.core.windows.net/<path>\n",
+							"\n",
+							"This notebook provides examples of how to read data from ADLS Gen2 account into a Spark context and how to write the output of Spark jobs directly into an ADLS Gen2 location.\n",
+							"\n",
+							"## Pre-requisites\n",
+							"Synapse leverage AAD pass-through to access any ADLS Gen2 account (or folder) to which you have a **Blob Storage Contributor** permission. No credentials or access token is required. "
+						]
+					},
+					{
+						"cell_type": "markdown",
+						"source": [
+							"## Load a sample data\n",
+							"\n",
+							"Let's first load the [public holidays](https://azure.microsoft.com/en-us/services/open-datasets/catalog/public-holidays/) of last 6 months from Azure Open datasets as a sample."
+						]
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"from azureml.opendatasets import PublicHolidays\n",
+							"\n",
+							"from datetime import datetime\n",
+							"from dateutil import parser\n",
+							"from dateutil.relativedelta import relativedelta\n",
+							"\n",
+							"\n",
+							"end_date = datetime.today()\n",
+							"start_date = datetime.today() - relativedelta(months=6)\n",
+							"hol = PublicHolidays(start_date=start_date, end_date=end_date)\n",
+							"hol_df = hol.to_spark_dataframe()"
+						],
+						"outputs": [],
+						"execution_count": 21
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"# Display 5 rows\n",
+							"hol_df.show(5, truncate = False)"
+						],
+						"outputs": [],
+						"execution_count": 22
+					},
+					{
+						"cell_type": "markdown",
+						"source": [
+							"## Write data to the default ADLS Gen2 storage\n",
+							"\n",
+							"We are going to write the spark dateframe to your default ADLS Gen2 storage account.\n",
+							""
+						]
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"from pyspark.sql import SparkSession\n",
+							"from pyspark.sql.types import *\n",
+							"\n",
+							"# Primary storage info\n",
+							"account_name = 'nwkgylqbzttuh456poc' # fill in your primary account name\n",
+							"container_name = 'public' # fill in your container name\n",
+							"relative_path = 'holiday_data/' # fill in your relative folder path\n",
+							"\n",
+							"adls_path = 'abfss://%s@%s.dfs.core.windows.net/%s' % (container_name, account_name, relative_path)\n",
+							"print('Primary storage account path: ' + adls_path)"
+						],
+						"outputs": [],
+						"execution_count": 23
+					},
+					{
+						"cell_type": "markdown",
+						"source": [
+							"### Save a dataframe as Parquet, JSON or CSV\n",
+							"If you have a dataframe, you can save it to Parquet or JSON with the .write.parquet(), .write.json() and .write.csv() methods respectively.\n",
+							"\n",
+							"Dataframes can be saved in any format, regardless of the input format.\n",
+							""
+						]
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"parquet_path = adls_path + 'holiday.parquet'\n",
+							"json_path = adls_path + 'holiday.json'\n",
+							"csv_path = adls_path + 'holiday.csv'\n",
+							"print('parquet file path: ' + parquet_path)\n",
+							"print('json file path： ' + json_path)\n",
+							"print('csv file path: ' + csv_path)"
+						],
+						"outputs": [],
+						"execution_count": 24
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"hol_df.write.parquet(parquet_path, mode = 'overwrite')\n",
+							"hol_df.write.json(json_path, mode = 'overwrite')\n",
+							"hol_df.write.csv(csv_path, mode = 'overwrite', header = 'true')"
+						],
+						"outputs": [],
+						"execution_count": 25
+					},
+					{
+						"cell_type": "markdown",
+						"source": [
+							"### Save a dataframe as text files\n",
+							"If you have a dataframe that you want ot save as text file, you must first covert it to an RDD and then save that RDD as a text file.\n",
+							""
+						]
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"# Define the text file path\n",
+							"text_path = adls_path + 'holiday.txt'\n",
+							"print('text file path: ' + text_path)"
+						],
+						"outputs": [],
+						"execution_count": 18
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"# Covert spark dataframe into RDD \n",
+							"hol_RDD = hol_df.rdd\n",
+							"type(hol_RDD)"
+						],
+						"outputs": [],
+						"execution_count": 19
+					},
+					{
+						"cell_type": "markdown",
+						"source": [
+							"If you have an RDD, you can convert it to a text file like the following:\n",
+							""
+						]
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							" # Save RDD as text file\n",
+							"hol_RDD.saveAsTextFile(text_path)"
+						],
+						"outputs": [],
+						"execution_count": 20
+					},
+					{
+						"cell_type": "markdown",
+						"source": [
+							"# Read data from the default ADLS Gen2 storage\n",
+							""
+						]
+					},
+					{
+						"cell_type": "markdown",
+						"source": [
+							"### Create a dataframe from parquet files\n",
+							""
+						]
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"collapsed": false
+						},
+						"source": [
+							"df_parquet = spark.read.parquet(parquet_path)\r\n",
+							"display(df_parquet)"
+						],
+						"outputs": [],
+						"execution_count": 27
+					},
+					{
+						"cell_type": "markdown",
+						"source": [
+							"### Create a dataframe from JSON files\n",
+							""
+						]
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"df_json = spark.read.json(json_path)"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "markdown",
+						"source": [
+							"### Create a dataframe from CSV files\n",
+							""
+						]
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"df_csv = spark.read.csv(csv_path, header = 'true')"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "markdown",
+						"source": [
+							"### Create an RDD from text file\n",
+							""
+						]
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"text = sc.textFile(text_path)"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"import matplotlib.pyplot as plt\r\n",
+							"import numpy as np\r\n",
+							"\r\n",
+							"fig = plt.figure()\r\n",
+							"ax = fig.add_subplot(111, projection = '3d')\r\n",
+							"\r\n",
+							"x = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]\r\n",
+							"y = np.random.randint(10, size=10)\r\n",
+							"z = np.zeros(10)\r\n",
+							"\r\n",
+							"dx = np.ones(10)\r\n",
+							"dy = np.ones(10)\r\n",
+							"dz = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]\r\n",
+							"\r\n",
+							"ax.bar3d(x, y, z, dx, dy, dz, color='g')\r\n",
+							"\r\n",
+							"ax.set_xlabel('x axis')\r\n",
+							"ax.set_ylabel('y axis')\r\n",
+							"ax.set_zlabel('z axis')\r\n",
+							"plt.title(\"3D Bar Chart Example\")\r\n",
+							"plt.tight_layout()\r\n",
+							"plt.show()"
+						],
+						"outputs": [],
+						"execution_count": 28
+					}
+				]
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/Read and write data from Azure Data Lake Storage Gen2_er7')]",
+			"type": "Microsoft.Synapse/workspaces/notebooks",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"nbformat": 4,
+				"nbformat_minor": 2,
+				"sessionProperties": {
+					"driverMemory": "28g",
+					"driverCores": 4,
+					"executorMemory": "28g",
+					"executorCores": 4,
+					"numExecutors": 2,
+					"conf": {
+						"spark.dynamicAllocation.enabled": "false",
+						"spark.dynamicAllocation.minExecutors": "2",
+						"spark.dynamicAllocation.maxExecutors": "2"
+					}
+				},
+				"metadata": {
+					"saveOutput": true,
+					"enableDebugMode": false,
+					"kernelspec": {
+						"name": "synapse_pyspark",
+						"display_name": "python"
+					},
+					"language_info": {
+						"name": "python"
+					}
+				},
+				"cells": [
+					{
+						"cell_type": "markdown",
+						"source": [
+							"# Access data on Azure Data Lake Storage Gen2 (ADLS Gen2) with Synapse Spark\n",
+							"\n",
+							"Azure Data Lake Storage Gen2 (ADLS Gen2) is used as the storage account associated with a Synapse workspace. A synapse workspace can have a default ADLS Gen2 storage account and additional linked storage accounts. \n",
+							"\n",
+							"You can access data on ADLS Gen2 with Synapse Spark via following URL:\n",
+							"    \n",
+							"    abfss://<container_name>@<storage_account_name>.dfs.core.windows.net/<path>\n",
+							"\n",
+							"This notebook provides examples of how to read data from ADLS Gen2 account into a Spark context and how to write the output of Spark jobs directly into an ADLS Gen2 location.\n",
+							"\n",
+							"## Pre-requisites\n",
+							"Synapse leverage AAD pass-through to access any ADLS Gen2 account (or folder) to which you have a **Blob Storage Contributor** permission. No credentials or access token is required. "
+						]
+					},
+					{
+						"cell_type": "markdown",
+						"source": [
+							"## Load a sample data\n",
+							"\n",
+							"Let's first load the [public holidays](https://azure.microsoft.com/en-us/services/open-datasets/catalog/public-holidays/) of last 6 months from Azure Open datasets as a sample."
+						]
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"from azureml.opendatasets import PublicHolidays\n",
+							"\n",
+							"from datetime import datetime\n",
+							"from dateutil import parser\n",
+							"from dateutil.relativedelta import relativedelta\n",
+							"\n",
+							"\n",
+							"end_date = datetime.today()\n",
+							"start_date = datetime.today() - relativedelta(months=6)\n",
+							"hol = PublicHolidays(start_date=start_date, end_date=end_date)\n",
+							"hol_df = hol.to_spark_dataframe()"
+						],
+						"outputs": [],
+						"execution_count": 1
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"# Display 5 rows\n",
+							"hol_df.show(5, truncate = False)"
+						],
+						"outputs": [],
+						"execution_count": 2
+					},
+					{
+						"cell_type": "markdown",
+						"source": [
+							"## Write data to the default ADLS Gen2 storage\n",
+							"\n",
+							"We are going to write the spark dateframe to your default ADLS Gen2 storage account.\n",
+							""
+						]
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"from pyspark.sql import SparkSession\n",
+							"from pyspark.sql.types import *\n",
+							"\n",
+							"# Primary storage info\n",
+							"account_name = 'fill in your primary account name' # fill in your primary account name\n",
+							"container_name = 'fill in your container name' # fill in your container name\n",
+							"relative_path = 'fill in your relative folder path' # fill in your relative folder path\n",
+							"\n",
+							"adls_path = 'abfss://%s@%s.dfs.core.windows.net/%s' % (container_name, account_name, relative_path)\n",
+							"print('Primary storage account path: ' + adls_path)"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "markdown",
+						"source": [
+							"### Save a dataframe as Parquet, JSON or CSV\n",
+							"If you have a dataframe, you can save it to Parquet or JSON with the .write.parquet(), .write.json() and .write.csv() methods respectively.\n",
+							"\n",
+							"Dataframes can be saved in any format, regardless of the input format.\n",
+							""
+						]
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"parquet_path = adls_path + 'holiday.parquet'\n",
+							"json_path = adls_path + 'holiday.json'\n",
+							"csv_path = adls_path + 'holiday.csv'\n",
+							"print('parquet file path: ' + parquet_path)\n",
+							"print('json file path： ' + json_path)\n",
+							"print('csv file path: ' + csv_path)"
+						],
+						"outputs": [],
+						"execution_count": 4
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"hol_df.write.parquet(parquet_path, mode = 'overwrite')\n",
+							"hol_df.write.json(json_path, mode = 'overwrite')\n",
+							"hol_df.write.csv(csv_path, mode = 'overwrite', header = 'true')"
+						],
+						"outputs": [],
+						"execution_count": 5
+					},
+					{
+						"cell_type": "markdown",
+						"source": [
+							"### Save a dataframe as text files\n",
+							"If you have a dataframe that you want ot save as text file, you must first covert it to an RDD and then save that RDD as a text file.\n",
+							""
+						]
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"# Define the text file path\n",
+							"text_path = adls_path + 'holiday.txt'\n",
+							"print('text file path: ' + text_path)"
+						],
+						"outputs": [],
+						"execution_count": 11
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"# Covert spark dataframe into RDD \n",
+							"hol_RDD = hol_df.rdd\n",
+							"type(hol_RDD)"
+						],
+						"outputs": [],
+						"execution_count": 12
+					},
+					{
+						"cell_type": "markdown",
+						"source": [
+							"If you have an RDD, you can convert it to a text file like the following:\n",
+							""
+						]
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							" # Save RDD as text file\n",
+							"hol_RDD.saveAsTextFile(text_path)"
+						],
+						"outputs": [],
+						"execution_count": 13
+					},
+					{
+						"cell_type": "markdown",
+						"source": [
+							"# Read data from the default ADLS Gen2 storage\n",
+							""
+						]
+					},
+					{
+						"cell_type": "markdown",
+						"source": [
+							"### Create a dataframe from parquet files\n",
+							""
+						]
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"df_parquet = spark.read.parquet(parquet_path)"
+						],
+						"outputs": [],
+						"execution_count": 14
+					},
+					{
+						"cell_type": "markdown",
+						"source": [
+							"### Create a dataframe from JSON files\n",
+							""
+						]
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"df_json = spark.read.json(json_path)"
+						],
+						"outputs": [],
+						"execution_count": 15
+					},
+					{
+						"cell_type": "markdown",
+						"source": [
+							"### Create a dataframe from CSV files\n",
+							""
+						]
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"df_csv = spark.read.csv(csv_path, header = 'true')"
+						],
+						"outputs": [],
+						"execution_count": 16
+					},
+					{
+						"cell_type": "markdown",
+						"source": [
+							"### Create an RDD from text file\n",
+							""
+						]
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"text = sc.textFile(text_path)"
+						],
+						"outputs": [],
+						"execution_count": 17
+					}
+				]
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/nwkgylqbzttuh456pocws1p1')]",
+			"type": "Microsoft.Synapse/workspaces/sqlPools",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"collation": "SQL_Latin1_General_CP1_CI_AS",
+				"maxSizeBytes": 263882790666240,
+				"restorePointInTime": "0001-01-01T00:00:00",
+				"annotations": []
+			},
+			"dependsOn": [],
+			"location": "eastus2"
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/default')]",
+			"type": "Microsoft.Synapse/workspaces/managedVirtualNetworks",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/Parameters Pipeline')]",
 			"type": "Microsoft.Synapse/workspaces/pipelines",
 			"apiVersion": "2019-06-01-preview",
 			"properties": {
@@ -3027,6 +3012,16 @@
 				"policy": {
 					"elapsedTimeMetric": {},
 					"cancelAfter": {}
+				},
+				"parameters": {
+					"a": {
+						"type": "int",
+						"defaultValue": 10
+					},
+					"b": {
+						"type": "int",
+						"defaultValue": 20
+					}
 				},
 				"annotations": []
 			},
