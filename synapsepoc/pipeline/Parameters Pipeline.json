@@ -19,6 +19,20 @@
 						"referenceName": "Parameters",
 						"type": "NotebookReference"
 					},
+					"parameters": {
+						"a": {
+							"value": {
+								"value": "@pipeline().parameters.a",
+								"type": "Expression"
+							}
+						},
+						"b": {
+							"value": {
+								"value": "@pipeline().parameters.b",
+								"type": "Expression"
+							}
+						}
+					},
 					"snapshot": true
 				}
 			}
