@@ -47,6 +47,20 @@
 		},
 		"cells": [
 			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"### Create Spark DataFrame using PySpark\r\n",
+					"Create a DataFrame from a list of tuples and create a local Spark view"
+				]
+			},
+			{
 				"cell_type": "code",
 				"metadata": {
 					"microsoft": {
@@ -59,7 +73,20 @@
 					"demo_df = spark.createDataFrame(new_rows, ['State', 'Age', 'Salary'])\r\n",
 					"demo_df.createOrReplaceTempView('demo_df')"
 				],
-				"execution_count": 1
+				"execution_count": 16
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"### Query View using SQL"
+				]
 			},
 			{
 				"cell_type": "code",
@@ -80,9 +107,24 @@
 				},
 				"source": [
 					"%%sql\r\n",
-					"SELECT * FROM demo_df"
+					"SELECT * FROM demo_df WHERE Age >30"
 				],
-				"execution_count": 2
+				"execution_count": 18
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"### Create Spark DataFrame using C`#`\r\n",
+					"Create Spark DataFrame from list of generic rows in C`#` and create a local Spark view\r\n",
+					""
+				]
 			},
 			{
 				"cell_type": "code",
@@ -127,7 +169,20 @@
 					"//Create temp view\r\n",
 					"df.CreateOrReplaceTempView(\"demo_df_2\")"
 				],
-				"execution_count": 3
+				"execution_count": 19
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"### Query New C`#` View using SQL"
+				]
 			},
 			{
 				"cell_type": "code",
@@ -150,7 +205,44 @@
 					"%%sql\r\n",
 					"SELECT * FROM demo_df_2"
 				],
-				"execution_count": 4
+				"execution_count": 20
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"### Load New View into Spark DataFrame with PySpark"
+				]
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					},
+					"microsoft": {
+						"language": "python"
+					},
+					"collapsed": false
+				},
+				"source": [
+					"%%pyspark\r\n",
+					"demo_df_2 = spark.table('demo_df_2')\r\n",
+					"display(demo_df_2)"
+				],
+				"execution_count": 21
 			}
 		]
 	}
