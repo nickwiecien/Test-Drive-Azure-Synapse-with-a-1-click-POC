@@ -1,0 +1,17 @@
+{
+	"name": "AML",
+	"properties": {
+		"annotations": [],
+		"type": "AzureMLService",
+		"typeProperties": {
+			"subscriptionId": "f3e38aaa-dd9c-4f17-95c1-ef3ff472da61",
+			"resourceGroupName": "dow_synapse_oneclick_v3_rg",
+			"mlWorkspaceName": "nwk_syn_demo_aml",
+			"authentication": "MSI"
+		},
+		"connectVia": {
+			"referenceName": "AutoResolveIntegrationRuntime",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}
